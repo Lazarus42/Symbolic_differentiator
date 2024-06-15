@@ -83,7 +83,7 @@ def diff(sym):
     
     terms = sym.split('*')
     left = diff(terms[0])
-    right = diff(terms[1])
+    right = diff('*'.join([terms[1]]))
     return sum_expressions(multiply(left, terms[1]), multiply(terms[0], right))
 
 def parse(input):
@@ -148,8 +148,22 @@ if __name__ == "__main__":
     '1.5*x^4 - 0.5*x^3 + 2.25*x^2 - 1.75*x + 3.5',
     '-2.5*x^3 + 3.75*x^2 - 0.5*x + 1.25',
     '0.1*x^5 - 0.2*x^4 + 0.3*x^3 - 0.4*x^2 + 0.5*x - 0.6',
-    '1.1*x^2 - 2.2*x + 3.3'
+    '1.1*x^2 - 2.2*x + 3.3',
+    'x^2*x + x^5*5 + x*x'
     ]
     for test_case in test_cases:
         print(process(test_case))
     main(sys.argv)
+
+
+    '''
+    log(2*x)*x^2
+    log(2*x)*(x^2)
+    (log(2*x))*(x^2)
+
+    log(x^2 + 3)*x^3
+
+    (fg)' = f'g + fg'
+    [log(x)][x^2]
+    (log(x))*x^2 -> 1/x * x^2 + log(x) * 2x
+    '''
