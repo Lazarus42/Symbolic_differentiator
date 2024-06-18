@@ -61,12 +61,32 @@ def poly_term(expr):
         return f'{power}*{base}'
     return f'{power}*{base}^{int(power)-1}'
 
+
+
+def power_of_poly(expr):
+    '''
+    (p(x))^c -> c * (p(x))^{c-1} * p'(x)
+    '''
+    lastIndParen = -1
+    for ind, ch in enumerate(expr):
+        if ch == ')':
+            lastIndParen = ind 
+
+    innerPoly = expr[1:lastIndParen]
+    exponent = int(expr[lastIndParen+2:])
+
+    return f'{exponent}*(({innerPoly})^{exponent - 1})*({differentiate(innerPoly)})'
+
+    return multiply(exponent, multiply(f'({innerPoly})^{exponent - 1}', differentiate(innerPoly)))
+
 def diff_simple_terms(expr):
     ''' 
     Differentiaties the most basic terms like x^a for a >= 1 and constants
     '''
     if is_number(expr):
         return '0'
+    elif is_poly_power(expr):
+        return power_of_poly(expr)
     else: # assuming for now we are only dealing with polynomials
         return poly_term(expr)
 
@@ -87,22 +107,14 @@ def clean_up(finalTerms):
 def is_not_sum(expr):
     return '+' not in expr
 
-def is_simple_term(expr):
-    return (('+' not in expr and '-' not in expr and '*' not in expr) or is_number(expr)) and not (is_coefficient(expr) > -1 and not is_number(expr))
+def is_poly_power(expr):
+    '''
+    (p)^c
+    '''
+    return '(' in expr
 
-def is_coefficient(expr):
-    '''
-    4x^2
-    '''
-    maxInd = -1
-    for i in range(len(expr)):
-        currCoef = expr[:i+1]
-        #print(currCoef)
-        if not is_number(currCoef):
-            return maxInd 
-        maxInd += 1
-        
-    return maxInd    
+def is_simple_term(expr):
+    return is_poly_power(expr) or (('+' not in expr and '-' not in expr and '*' not in expr) or is_number(expr)) 
 
 def differentiate(expr):
     ''' 
@@ -115,12 +127,7 @@ def differentiate(expr):
         return diff_simple_terms(expr)
     
     if is_not_sum(expr):
-        if '*' in expr:
-            terms = expr.split('*')
-        else:
-            tempRes = is_coefficient(expr)
-            terms = [expr[:tempRes + 1], expr[tempRes + 1:]]
-
+        terms = expr.split('*')
         left = differentiate(terms[0])
         right = differentiate('*'.join([terms[1]]))
         return sum_expressions(multiply(left, terms[1]), multiply(terms[0], right))
@@ -179,3 +186,19 @@ if __name__ == "__main__":
 
   
 
+'''
+(x^2 + 2*x + 3)^2
+
+(p(x))^c -> c * (p(x))^{c-1} * p'(x)
+
+(x^2 + 9*x + 5)^100
+
+x^2 + 9*x + 5
+5*x^10 + 9*x^4 + 100*x + 10
+
+
+'(x^2 + 2*x)^2' -> 2 * (x^2 + 2*x) * (2*x + 2)
+2*((x^2 + 2*x)^1)*(2*x + 2)
+
+
+'''
