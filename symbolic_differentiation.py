@@ -61,7 +61,7 @@ def poly_term(expr):
         return f'{power}*{base}'
     return f'{power}*{base}^{int(power)-1}'
 
-def simple_terms(expr):
+def diff_simple_terms(expr):
     ''' 
     Differentiaties the most basic terms like x^a for a >= 1 and constants
     '''
@@ -69,22 +69,6 @@ def simple_terms(expr):
         return '0'
     else: # assuming for now we are only dealing with polynomials
         return poly_term(expr)
-
-def diff(sym):
-    ''' 
-    Recursively call using the product and sum rules until we get to simple expressions and build from there
-    Uses:
-    (f1 + f2 + f3)' = f1' + f2' + f3'
-    (fg)' = f'g + fg'
-    '''
-    # Check if its a simple expression
-    if '*' not in sym:
-        return simple_terms(sym)
-    
-    terms = sym.split('*')
-    left = diff(terms[0])
-    right = diff('*'.join([terms[1]]))
-    return sum_expressions(multiply(left, terms[1]), multiply(terms[0], right))
 
 def parse(input):
     '''
@@ -100,17 +84,54 @@ def clean_up(finalTerms):
         return finalTerms[:-2]
     return finalTerms
 
-def process(info):
+def is_not_sum(expr):
+    return '+' not in expr
+
+def is_simple_term(expr):
+    return (('+' not in expr and '-' not in expr and '*' not in expr) or is_number(expr)) and not (is_coefficient(expr) > -1 and not is_number(expr))
+
+def is_coefficient(expr):
     '''
-    Takes in input string, parses, differentiates, and returns result string
+    4x^2
     '''
-    parsed = parse(info)
+    maxInd = -1
+    for i in range(len(expr)):
+        currCoef = expr[:i+1]
+        #print(currCoef)
+        if not is_number(currCoef):
+            return maxInd 
+        maxInd += 1
+        
+    return maxInd    
+
+def differentiate(expr):
+    ''' 
+    Recursively call using the product and sum rules until we get to simple expressions and build from there
+    Uses:
+    (f1 + f2 + f3)' = f1' + f2' + f3'
+    (fg)' = f'g + fg'
+    '''
+    if is_simple_term(expr):
+        return diff_simple_terms(expr)
+    
+    if is_not_sum(expr):
+        if '*' in expr:
+            terms = expr.split('*')
+        else:
+            tempRes = is_coefficient(expr)
+            terms = [expr[:tempRes + 1], expr[tempRes + 1:]]
+
+        left = differentiate(terms[0])
+        right = differentiate('*'.join([terms[1]]))
+        return sum_expressions(multiply(left, terms[1]), multiply(terms[0], right))
+
+    parsed = parse(expr)
     res = []
     for sym in parsed:
         if sym in ["+", "-"]:
             res.append(sym)
         else:
-            res.append(diff(sym))
+            res.append(differentiate(sym))
     cleanedRes = clean_up(res)
     return ' '.join(cleanedRes)
 
@@ -119,51 +140,42 @@ def main(args):
         print("The script requires a polynomial input string")
         return 
     inputPolynomial = args[1]
-    print(process(inputPolynomial))
+    print(differentiate(inputPolynomial))
     return 
 
 if __name__ == "__main__":
-    test_cases = [
-    '1*x^2 - 1*x + 1',
-    '2*x^3 - 3*x^2 + 1*x - 5',
-    '-1*x^4 + 2*x^3 - 1*x + 4',
-    '3*x^2 - 2*x + 2',
-    '4*x^5 - 1*x^3 + 3*x^2 - 1*x + 7',
-    '-2*x^3 + 5*x - 1',
-    '1*x^6 - 3*x^4 + 1*x^3 - 4*x + 9',
-    '5*x^2 + 4*x - 3',
-    '-3*x^3 + 1*x^2 - 2*x + 1',
-    '1*x^4 - 4*x^3 + 6*x^2 - 4*x + 1',
-    '7*x^5 - 2*x^4 + 3*x^2 - 4',
-    '1*x^3 - 1*x + 2',
-    '2*x^4 - 1*x^2 + 3*x - 6',
-    '-1*x^5 + 4*x^3 - 3*x^2 + 2',
-    '6*x^4 - 2*x^3 + 5*x - 8',
-    '3*x^3 + 2*x^2 - 1*x + 4',
-    '-1*x^2 + 4*x - 5',
-    '2*x^5 - 3*x^4 + 4*x^2 - 1*x + 1',
-    '1*x^4 - 2*x^3 + 1*x - 1',
-    '3*x^2 - 1*x + 7',
-    '0.5*x^3 - 1.25*x^2 + 0.75*x - 2.5',
-    '1.5*x^4 - 0.5*x^3 + 2.25*x^2 - 1.75*x + 3.5',
-    '-2.5*x^3 + 3.75*x^2 - 0.5*x + 1.25',
-    '0.1*x^5 - 0.2*x^4 + 0.3*x^3 - 0.4*x^2 + 0.5*x - 0.6',
-    '1.1*x^2 - 2.2*x + 3.3',
-    'x^2*x + x^5*5 + x*x'
-    ]
-    for test_case in test_cases:
-        print(process(test_case))
+    # test_cases = [
+    #     'x^2 + -1*x + 1',
+    #     '2*x^3 + -3*x^2 + 1*x + -5',
+    #     '-1*x^4 + 2*x^3 + -1*x + 4',
+    #     '3*x^2 + -2*x + 2',
+    #     '4*x^5 + -1*x^3 + 3*x^2 + -1*x + 7',
+    #     '-2*x^3 + 5*x + -1',
+    #     '1*x^6 + -3*x^4 + 1*x^3 + -4*x + 9',
+    #     '5*x^2 + 4*x + -3',
+    #     '-3*x^3 + 1*x^2 + -2*x + 1',
+    #     '1*x^4 + -4*x^3 + 6*x^2 + -4*x + 1',
+    #     '7*x^5 + -2*x^4 + 3*x^2 + -4',
+    #     '1*x^3 + -1*x + 2',
+    #     '2*x^4 + -1*x^2 + 3*x + -6',
+    #     '-1*x^5 + 4*x^3 + -3*x^2 + 2',
+    #     '6*x^4 + -2*x^3 + 5*x + -8',
+    #     '3*x^3 + 2*x^2 + -1*x + 4',
+    #     '-1*x^2 + 4*x + -5',
+    #     '2*x^5 + -3*x^4 + 4*x^2 + -1*x + 1',
+    #     '1*x^4 + -2*x^3 + 1*x + -1',
+    #     '3*x^2 + -1*x + 7',
+    #     '0.5*x^3 + -1.25*x^2 + 0.75*x + -2.5',
+    #     '1.5*x^4 + -0.5*x^3 + 2.25*x^2 + -1.75*x + 3.5',
+    #     '-2.5*x^3 + 3.75*x^2 + -0.5*x + 1.25',
+    #     '0.1*x^5 + -0.2*x^4 + 0.3*x^3 + -0.4*x^2 + 0.5*x + -0.6',
+    #     '1.1*x^2 + -2.2*x + 3.3'
+    #     'x^2*x + x^5*5 + x*x'
+    #     ]
+    # for test_case in test_cases:
+    #     print(differentiate(test_case))
     main(sys.argv)
 
 
-    '''
-    log(2*x)*x^2
-    log(2*x)*(x^2)
-    (log(2*x))*(x^2)
+  
 
-    log(x^2 + 3)*x^3
-
-    (fg)' = f'g + fg'
-    [log(x)][x^2]
-    (log(x))*x^2 -> 1/x * x^2 + log(x) * 2x
-    '''
